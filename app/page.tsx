@@ -6,6 +6,8 @@ import type { Restroom, Filters } from "@/components/types";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import BottomBar from "@/components/BottomBar";
+import { LanguageProvider, useLang } from "@/lib/LanguageContext";
+import { TILE_STYLES, TILE_STYLE_ORDER, type TileStyle } from "@/lib/tileStyles";
 
 const Map = dynamic(() => import("@/components/Map"), {
   ssr: false,
@@ -31,7 +33,8 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-export default function Home() {
+function HomeInner() {
+  const { tr } = useLang();
   const [allRestrooms, setAllRestrooms] = useState<Restroom[]>([]);
   const [loading, setLoading] = useState(true);
   const [dataSource, setDataSource] = useState<"api" | "fallback">("fallback");
@@ -40,9 +43,11 @@ export default function Home() {
     babyChange: false,
     is24h: false,
     search: "",
+    category: "all",
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [simplified, setSimplified] = useState(false);   // map tile style
+  const [tileStyle, setTileStyle] = useState<TileStyle>("voyager");  // default: beautiful colour map
+  const [stylePickerOpen, setStylePickerOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);       // auto-detected
   const [fontScale, setFontScale] = useState(1);         // UI text scale: 0.8–1.6
   const scaleUp = () => setFontScale(s => Math.min(1.6, parseFloat((s + 0.1).toFixed(1))));
@@ -75,6 +80,7 @@ export default function Home() {
   }, []);
 
   const filtered = allRestrooms.filter((r) => {
+    if (filters.category !== "all" && r.category !== filters.category) return false;
     if (filters.accessible && !r.accessible) return false;
     if (filters.babyChange && !r.babyChange) return false;
     if (filters.is24h && !r.is24h) return false;
@@ -83,7 +89,8 @@ export default function Home() {
       if (
         !r.name.toLowerCase().includes(q) &&
         !r.district.toLowerCase().includes(q) &&
-        !r.address.toLowerCase().includes(q)
+        !r.address.toLowerCase().includes(q) &&
+        !(r.brand?.toLowerCase().includes(q) ?? false)
       )
         return false;
     }
@@ -102,7 +109,7 @@ export default function Home() {
   /** Just show my location on the map — no restroom highlighting */
   const handleMyLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      setGeoError("此瀏覽器不支援定位功能");
+      setGeoError(tr.geoNotSupported);
       return;
     }
     setLocatingMe(true);
@@ -114,17 +121,17 @@ export default function Home() {
         setLocatingMe(false);
       },
       (err) => {
-        setGeoError(err.message || "定位失敗，請確認已允許位置權限");
+        setGeoError(err.message || tr.geoFailed);
         setLocatingMe(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
-  }, []);
+  }, [tr]);
 
   /** Show location AND highlight the 5 nearest restrooms */
   const handleNearMe = useCallback(() => {
     if (!navigator.geolocation) {
-      setGeoError("此瀏覽器不支援定位功能");
+      setGeoError(tr.geoNotSupported);
       return;
     }
     setLocatingNear(true);
@@ -145,12 +152,12 @@ export default function Home() {
         setSidebarOpen(false);
       },
       (err) => {
-        setGeoError(err.message || "定位失敗，請確認已允許位置權限");
+        setGeoError(err.message || tr.geoFailed);
         setLocatingNear(false);
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
-  }, [allRestrooms]);
+  }, [allRestrooms, tr]);
 
   const clearLocation = () => {
     setUserLat(null);
@@ -189,62 +196,114 @@ export default function Home() {
         overflow: "hidden",
         paddingBottom: isMobile ? Math.round(64 * fontScale) : 0,
       }}>
-        {loading ? (
-          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb" }}>
-            <div style={{ textAlign: "center", color: "#6b7280" }}>
-              <div style={{ fontSize: 56, marginBottom: 12 }}>🚻</div>
-              <p style={{ fontSize: 16, fontWeight: 600 }}>載入台北公廁資料...</p>
-            </div>
-          </div>
-        ) : (
+        {!loading && (
           <Map
             restrooms={displayRestrooms}
             nearIds={nearIds}
             userLat={userLat}
             userLng={userLng}
-            simplified={simplified}
+            tileStyle={tileStyle}
           />
         )}
 
-        {/* ── Floating map style toggle (top-left) ── */}
+        {/* ── Floating map style picker (top-left) ── */}
         {!loading && (
           <div style={{
             position: "absolute",
-            top: 100,
+            top: 10,
             left: 10,
             zIndex: 900,
-            display: "flex",
-            flexDirection: "column",
-            borderRadius: 6,
-            overflow: "hidden",
-            boxShadow: "0 1px 5px rgba(0,0,0,0.35)",
-            border: "2px solid rgba(0,0,0,0.18)",
           }}>
+            {/* Toggle button */}
             <button
-              onClick={() => setSimplified(s => !s)}
-              title={simplified ? "切換回詳細地圖" : "切換為簡化地圖"}
+              onClick={() => setStylePickerOpen(o => !o)}
+              title="切換地圖風格"
               style={{
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 justifyContent: "center",
-                background: simplified ? "#0D9488" : "#fff",
-                color: simplified ? "#fff" : "#333",
-                border: "none",
-                padding: "8px 10px",
-                fontSize: 18,
+                background: stylePickerOpen ? "#111827" : "rgba(255,255,255,0.95)",
+                color: stylePickerOpen ? "#fff" : "#111827",
+                border: "2px solid rgba(0,0,0,0.18)",
+                borderRadius: 10,
+                padding: "7px 10px",
+                fontSize: 20,
                 cursor: "pointer",
                 lineHeight: 1,
                 gap: 2,
-                minWidth: 46,
+                minWidth: 50,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
                 touchAction: "manipulation",
+                WebkitTapHighlightColor: "transparent",
+                transition: "background 0.15s, color 0.15s",
               }}
             >
-              🗺
-              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.2 }}>
-                {simplified ? "標準圖" : "簡化圖"}
+              {TILE_STYLES[tileStyle].emoji}
+              <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.3, marginTop: 2 }}>
+                地圖風格
               </span>
             </button>
+
+            {/* Style picker panel */}
+            {stylePickerOpen && (
+              <div style={{
+                position: "absolute",
+                top: "calc(100% + 6px)",
+                left: 0,
+                background: "rgba(17,24,39,0.96)",
+                backdropFilter: "blur(8px)",
+                WebkitBackdropFilter: "blur(8px)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: 12,
+                padding: 10,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.45)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                minWidth: 140,
+              }}>
+                <p style={{ margin: "0 0 6px", fontSize: 10, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                  地圖風格
+                </p>
+                {TILE_STYLE_ORDER.map((style) => {
+                  const s = TILE_STYLES[style];
+                  const active = tileStyle === style;
+                  return (
+                    <button
+                      key={style}
+                      onClick={() => { setTileStyle(style); setStylePickerOpen(false); }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        padding: "8px 10px",
+                        borderRadius: 8,
+                        border: `1.5px solid ${active ? "#0D9488" : "transparent"}`,
+                        background: active ? "rgba(13,148,136,0.18)" : "rgba(255,255,255,0.06)",
+                        color: active ? "#5eead4" : "#e5e7eb",
+                        cursor: "pointer",
+                        width: "100%",
+                        textAlign: "left",
+                        fontSize: 13,
+                        fontWeight: active ? 700 : 400,
+                        transition: "all 0.12s",
+                        WebkitTapHighlightColor: "transparent",
+                      }}
+                    >
+                      <span style={{ fontSize: 18, lineHeight: 1 }}>{s.emoji}</span>
+                      <div>
+                        <div style={{ lineHeight: 1.2 }}>{s.label}</div>
+                        <div style={{ fontSize: 10, color: active ? "#99f6e4" : "#6b7280", lineHeight: 1.2 }}>{s.labelEn}</div>
+                      </div>
+                      {active && (
+                        <span style={{ marginLeft: "auto", fontSize: 14, color: "#0D9488" }}>✓</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -258,6 +317,14 @@ export default function Home() {
               background: "rgba(0,0,0,0.25)",
               zIndex: 999,
             }}
+          />
+        )}
+
+        {/* Invisible backdrop to close style picker */}
+        {stylePickerOpen && (
+          <div
+            onClick={() => setStylePickerOpen(false)}
+            style={{ position: "absolute", inset: 0, zIndex: 890 }}
           />
         )}
 
@@ -286,6 +353,16 @@ export default function Home() {
           </div>
         )}
 
+        {/* Map loading overlay uses translated string */}
+        {loading && (
+          <div style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#f9fafb" }}>
+            <div style={{ textAlign: "center", color: "#6b7280" }}>
+              <div style={{ fontSize: 56, marginBottom: 12 }}>🚻</div>
+              <p style={{ fontSize: 16, fontWeight: 600 }}>{tr.dataLoading}</p>
+            </div>
+          </div>
+        )}
+
         {/* Data source badge — raise above BottomBar on mobile */}
         {!loading && dataSource === "fallback" && (
           <div style={{
@@ -301,7 +378,7 @@ export default function Home() {
             borderRadius: 6,
             boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
           }}>
-            ⚠ 示範資料（API暫時無法連線）
+            {tr.fallbackBadge}
           </div>
         )}
       </main>
@@ -333,5 +410,13 @@ export default function Home() {
         />
       )}
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <LanguageProvider>
+      <HomeInner />
+    </LanguageProvider>
   );
 }

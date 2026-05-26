@@ -1,5 +1,7 @@
 "use client";
 
+import { useLang } from "@/lib/LanguageContext";
+
 interface BottomBarProps {
   fontScale: number;
   // My Location
@@ -30,6 +32,8 @@ export default function BottomBar({
   onToggleSidebar,
   sidebarOpen,
 }: BottomBarProps) {
+  const { tr } = useLang();
+
   // Derived sizes — scale up both the bar height and font sizes
   const barHeight = Math.round(64 * fontScale);
   const emojiSize = Math.round(22 * fontScale);
@@ -53,11 +57,11 @@ export default function BottomBar({
         transition: "height 0.15s ease",
       }}
     >
-      {/* ① 我的位置 */}
+      {/* ① 我的位置 / My Location */}
       {locationActive ? (
         <ActiveChip
           emoji="📍"
-          label="已定位"
+          label={tr.located}
           dotColor="#60a5fa"
           bg="#1d4ed8"
           onClear={onClearLocation}
@@ -67,7 +71,7 @@ export default function BottomBar({
       ) : (
         <BarButton
           emoji={locatingMe ? "⏳" : "📍"}
-          label="我的位置"
+          label={tr.myLocation}
           onClick={onMyLocation}
           disabled={locatingMe}
           active={false}
@@ -78,11 +82,11 @@ export default function BottomBar({
 
       <Divider />
 
-      {/* ② 附近廁所 */}
+      {/* ② 附近廁所 / Nearby */}
       {nearCount > 0 ? (
         <ActiveChip
           emoji="🚻"
-          label={`最近 ${nearCount} 間`}
+          label={tr.nearestN(nearCount)}
           dotColor="#6ee7b7"
           bg="#065f46"
           onClear={onClearNear}
@@ -92,7 +96,7 @@ export default function BottomBar({
       ) : (
         <BarButton
           emoji={locatingNear ? "⏳" : "🚻"}
-          label="附近廁所"
+          label={tr.nearby}
           onClick={onNearMe}
           disabled={locatingNear}
           active={false}
@@ -104,10 +108,10 @@ export default function BottomBar({
 
       <Divider />
 
-      {/* ③ 篩選 */}
+      {/* ③ 篩選 / Filter */}
       <BarButton
         emoji={sidebarOpen ? "✕" : "☰"}
-        label={sidebarOpen ? "關閉" : "篩選"}
+        label={sidebarOpen ? tr.close : tr.filter}
         onClick={onToggleSidebar}
         disabled={false}
         active={sidebarOpen}

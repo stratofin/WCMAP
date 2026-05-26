@@ -1,5 +1,7 @@
 "use client";
 
+import { useLang } from "@/lib/LanguageContext";
+
 interface HeaderProps {
   isMobile: boolean;
   fontScale: number;
@@ -35,6 +37,8 @@ export default function Header({
   nearCount,
   onClearNear,
 }: HeaderProps) {
+  const { lang, setLang, tr } = useLang();
+
   // Derived sizes — applied to desktop buttons AND mobile header
   const btnFont  = Math.round(13 * fontScale);  // main button label
   const chipFont = Math.round(12 * fontScale);  // active-state chip label
@@ -43,6 +47,8 @@ export default function Header({
   const headerH  = isMobile
     ? Math.round(50 * fontScale)
     : Math.round(56 * fontScale);
+
+  const toggleLang = () => setLang(lang === "zh" ? "en" : "zh");
 
   return (
     <header
@@ -62,14 +68,14 @@ export default function Header({
         transition: "height 0.15s ease",
       }}
     >
-      {/* Logo + ▲▼ scale controls */}
+      {/* Logo + ▲▼ scale controls + 中/EN toggle */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
         <span style={{ fontSize: isMobile ? 22 : 24 }}>🚻</span>
         <div>
           <h1 style={{ margin: 0, fontSize: isMobile ? 15 : 16, fontWeight: 800, lineHeight: 1.2, whiteSpace: "nowrap" }}>
-            台北公廁地圖
+            {tr.appName}
           </h1>
-          <p style={{ margin: 0, fontSize: 10, color: "#9ca3af", lineHeight: 1.2 }}>Taipei WC Map</p>
+          <p style={{ margin: 0, fontSize: 10, color: "#9ca3af", lineHeight: 1.2 }}>{tr.appSub}</p>
         </div>
 
         {/* ▲▼ scaler — visible on both mobile and desktop */}
@@ -77,13 +83,37 @@ export default function Header({
           <ScaleBtn onClick={onScaleUp}  disabled={fontScale >= 1.6} label="▲" title="放大按鈕文字" />
           <ScaleBtn onClick={onScaleDown} disabled={fontScale <= 0.8} label="▼" title="縮小按鈕文字" />
         </div>
+
+        {/* 中/EN language toggle — always visible */}
+        <button
+          onClick={toggleLang}
+          title={lang === "zh" ? "Switch to English" : "切換為中文"}
+          style={{
+            background: "#374151",
+            color: "#e5e7eb",
+            border: "1px solid #4b5563",
+            borderRadius: 6,
+            padding: "3px 8px",
+            fontSize: Math.round(11 * fontScale),
+            fontWeight: 800,
+            cursor: "pointer",
+            letterSpacing: 0.5,
+            lineHeight: 1.4,
+            transition: "background 0.15s",
+            whiteSpace: "nowrap",
+            touchAction: "manipulation",
+            WebkitTapHighlightColor: "transparent",
+          }}
+        >
+          {tr.langToggle}
+        </button>
       </div>
 
       {/* Desktop action buttons — scaled with fontScale */}
       {!isMobile && (
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "nowrap" }}>
 
-          {/* ① 我的位置 */}
+          {/* ① 我的位置 / My Location */}
           {locationActive ? (
             <div style={{
               display: "flex", alignItems: "center", gap: 5,
@@ -97,13 +127,13 @@ export default function Header({
                 borderRadius: "50%", background: "#60a5fa",
                 boxShadow: "0 0 0 2px rgba(96,165,250,0.4)",
               }} />
-              已定位
+              {tr.located}
               <button onClick={onClearLocation} title="清除定位"
                 style={{ background: "none", border: "none", cursor: "pointer", color: "#93c5fd", fontSize: Math.round(15 * fontScale), fontWeight: 900, padding: 0, lineHeight: 1 }}
               >×</button>
             </div>
           ) : (
-            <button onClick={onMyLocation} disabled={locatingMe} title="顯示我的目前位置"
+            <button onClick={onMyLocation} disabled={locatingMe} title={tr.myLocation}
               style={{
                 display: "flex", alignItems: "center", gap: 5,
                 background: locatingMe ? "#374151" : "#1d4ed8",
@@ -115,11 +145,11 @@ export default function Header({
                 transition: "font-size 0.15s, padding 0.15s",
               }}
             >
-              {locatingMe ? "⏳" : "📍"} 我的位置
+              {locatingMe ? "⏳" : "📍"} {tr.myLocation}
             </button>
           )}
 
-          {/* ② 附近廁所 */}
+          {/* ② 附近廁所 / Nearby */}
           {nearCount > 0 ? (
             <div style={{
               display: "flex", alignItems: "center", gap: 5,
@@ -128,13 +158,13 @@ export default function Header({
               padding: `${btnPadV - 1}px ${btnPadH}px`, borderRadius: 8,
               whiteSpace: "nowrap",
             }}>
-              ⭐ 最近 {nearCount} 間
+              ⭐ {tr.nearestN(nearCount)}
               <button onClick={onClearNear} title="清除附近廁所"
                 style={{ background: "none", border: "none", cursor: "pointer", color: "#6ee7b7", fontSize: Math.round(15 * fontScale), fontWeight: 900, padding: 0, lineHeight: 1 }}
               >×</button>
             </div>
           ) : (
-            <button onClick={onNearMe} disabled={locatingNear} title="找最近的 5 間廁所"
+            <button onClick={onNearMe} disabled={locatingNear} title={tr.nearby}
               style={{
                 display: "flex", alignItems: "center", gap: 5,
                 background: locatingNear ? "#374151" : "#0D9488",
@@ -146,11 +176,11 @@ export default function Header({
                 transition: "font-size 0.15s, padding 0.15s",
               }}
             >
-              {locatingNear ? "⏳" : "🚻"} 附近廁所
+              {locatingNear ? "⏳" : "🚻"} {tr.nearby}
             </button>
           )}
 
-          {/* ③ 篩選 */}
+          {/* ③ 篩選 / Filter */}
           <button onClick={onToggleSidebar}
             style={{
               display: "flex", alignItems: "center", gap: 5,
@@ -163,7 +193,7 @@ export default function Header({
             }}
             aria-label="Toggle filter sidebar"
           >
-            {sidebarOpen ? "✕ 關閉" : "☰ 篩選"}
+            {sidebarOpen ? `✕ ${tr.close}` : `☰ ${tr.filter}`}
           </button>
         </div>
       )}

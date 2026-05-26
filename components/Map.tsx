@@ -9,7 +9,11 @@ import {
   useMap,
 } from "react-leaflet";
 import L from "leaflet";
-import type { Restroom } from "./types";
+import type { Restroom, RestroomCategory } from "./types";
+import RatingWidget from "./RatingWidget";
+import { TILE_STYLES, type TileStyle } from "@/lib/tileStyles";
+export type { TileStyle } from "@/lib/tileStyles";
+export { TILE_STYLES };
 
 // Fix Leaflet default icon path broken by webpack
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
@@ -18,6 +22,16 @@ L.Icon.Default.mergeOptions({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
+
+/** Category → { color, emoji } for marker */
+const CAT_STYLE: Record<RestroomCategory, { color: string; emoji: string }> = {
+  public:       { color: "#0D9488", emoji: "🚻" },
+  mrt:          { color: "#8b5cf6", emoji: "🚇" },
+  convenience:  { color: "#f97316", emoji: "🏪" },
+  cafe:         { color: "#84cc16", emoji: "☕" },
+  fastfood:     { color: "#ef4444", emoji: "🍔" },
+  department:   { color: "#ec4899", emoji: "🏬" },
+};
 
 function formatDist(km: number): string {
   return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
@@ -29,7 +43,6 @@ function makeUserIcon() {
     className: "",
     html: `
       <div style="position:relative;width:36px;height:36px;display:flex;align-items:center;justify-content:center;">
-        <!-- outer pulse ring -->
         <div class="user-loc-pulse" style="
           position:absolute;
           inset:0;
@@ -37,7 +50,6 @@ function makeUserIcon() {
           background:#3b82f6;
           opacity:0.6;
         "></div>
-        <!-- inner solid dot -->
         <div style="
           position:absolute;
           width:16px;height:16px;
@@ -54,9 +66,10 @@ function makeUserIcon() {
   });
 }
 
-/** Large, clearly visible WC pin marker */
-function makeWCIcon(isNear: boolean) {
-  const bg = isNear ? "#f59e0b" : "#0D9488";
+/** Pin marker coloured by category; amber when in nearIds */
+function makeMarkerIcon(category: RestroomCategory, isNear: boolean) {
+  const { color, emoji } = CAT_STYLE[category] ?? CAT_STYLE.public;
+  const bg = isNear ? "#f59e0b" : color;
   const size = 38;
   return L.divIcon({
     className: "",
@@ -75,12 +88,12 @@ function makeWCIcon(isNear: boolean) {
       ">
         <span style="
           transform:rotate(45deg);
-          font-size:18px;
+          font-size:17px;
           line-height:1;
           display:block;
           margin-top:2px;
           margin-left:2px;
-        ">🚻</span>
+        ">${emoji}</span>
       </div>
     `,
     iconSize: [size, size],
@@ -97,39 +110,26 @@ function FlyTo({ lat, lng }: { lat: number; lng: number }) {
   return null;
 }
 
-const TILES = {
-  standard: {
-    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  },
-  simple: {
-    // CartoDB Positron — clean, minimal, great readability (like Google Maps light mode)
-    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-  },
-};
-
 interface MapProps {
   restrooms: Restroom[];
   nearIds: Set<string>;
   userLat: number | null;
   userLng: number | null;
-  simplified: boolean;
+  tileStyle: TileStyle;
 }
 
-export default function Map({ restrooms, nearIds, userLat, userLng, simplified }: MapProps) {
-  const tile = simplified ? TILES.simple : TILES.standard;
+export default function Map({ restrooms, nearIds, userLat, userLng, tileStyle }: MapProps) {
+  const tile = TILE_STYLES[tileStyle] ?? TILE_STYLES.voyager;
+  const isDark = !!tile.dark;
   return (
     <MapContainer
       center={[25.033, 121.5654]}
       zoom={14}
-      className="w-full h-full"
+      className={`w-full h-full${isDark ? " map-dark" : ""}`}
       zoomControl={true}
     >
-      {/* key forces tile layer remount when style changes */}
       <TileLayer
-        key={simplified ? "simple" : "standard"}
+        key={tileStyle}
         url={tile.url}
         attribution={tile.attribution}
         maxZoom={19}
@@ -139,16 +139,25 @@ export default function Map({ restrooms, nearIds, userLat, userLng, simplified }
         const isNear = nearIds.has(r.id);
         const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}`;
         const reportUrl = `https://docs.google.com/forms/d/e/1FAIpQLSf_placeholder/viewform`;
+        const catStyle = CAT_STYLE[r.category] ?? CAT_STYLE.public;
 
         return (
-          <Marker key={r.id} position={[r.lat, r.lng]} icon={makeWCIcon(isNear)}>
+          <Marker
+            key={r.id}
+            position={[r.lat, r.lng]}
+            icon={makeMarkerIcon(r.category, isNear)}
+          >
             <Popup maxWidth={300} minWidth={240}>
-              {/* Popup uses plain inline styles — no Tailwind inside Leaflet popup */}
               <div style={{ fontFamily: "Arial, sans-serif", padding: "2px 0" }}>
 
                 {/* Title row */}
                 <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 4, marginBottom: 6 }}>
                   <strong style={{ fontSize: 15 }}>{r.name}</strong>
+                  {r.brand && (
+                    <span style={{ background: "#f3f4f6", color: "#374151", fontSize: 11, fontWeight: 600, padding: "2px 7px", borderRadius: 99 }}>
+                      {catStyle.emoji} {r.brand}
+                    </span>
+                  )}
                   {isNear && (
                     <span style={{ background: "#fef3c7", color: "#92400e", fontSize: 11, fontWeight: 600, padding: "2px 7px", borderRadius: 99 }}>
                       ⭐ 最近
@@ -196,7 +205,7 @@ export default function Map({ restrooms, nearIds, userLat, userLng, simplified }
                     rel="noopener noreferrer"
                     style={{
                       display: "inline-block",
-                      background: "#0D9488",
+                      background: catStyle.color,
                       color: "#fff",
                       fontSize: 13,
                       fontWeight: 700,
@@ -225,6 +234,16 @@ export default function Map({ restrooms, nearIds, userLat, userLng, simplified }
                     ⚠ 回報
                   </a>
                 </div>
+
+                {/* Rating widget */}
+                <RatingWidget
+                  restroomId={r.id}
+                  initialAggregate={
+                    r.avgRating !== undefined && r.ratingCount !== undefined
+                      ? { avgRating: r.avgRating, ratingCount: r.ratingCount }
+                      : null
+                  }
+                />
               </div>
             </Popup>
           </Marker>
