@@ -3,6 +3,17 @@
 import type { Filters, RestroomCategory } from "./types";
 import { useLang } from "@/lib/LanguageContext";
 
+// Government / public color family
+const GOV_COLOR = "#0D9488";
+const MRT_COLOR = "#0891b2";
+// Commercial colors
+const COM_COLORS: Partial<Record<RestroomCategory, string>> = {
+  convenience: "#f97316",
+  cafe:        "#84cc16",
+  fastfood:    "#ef4444",
+  department:  "#ec4899",
+};
+
 interface SidebarProps {
   open: boolean;
   filters: Filters;
@@ -70,7 +81,36 @@ export default function Sidebar({ open, filters, onChange, total, filtered, mobi
     transition: "transform 0.3s cubic-bezier(0.4,0,0.2,1)",
   };
 
-  const cats: (RestroomCategory | "all")[] = ["all", "public", "mrt", "convenience", "cafe", "fastfood", "department"];
+  const govCats: (RestroomCategory | "all")[] = ["public", "mrt"];
+  const comCats: RestroomCategory[] = ["convenience", "cafe", "fastfood", "department"];
+
+  function CatButton({ cat, activeColor }: { cat: RestroomCategory | "all"; activeColor: string }) {
+    const active = filters.category === cat;
+    return (
+      <button
+        key={cat}
+        onClick={() => onChange({ ...filters, category: cat })}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          padding: "5px 10px",
+          borderRadius: 20,
+          border: `1.5px solid ${active ? activeColor : "#d1d5db"}`,
+          background: active ? activeColor : "#fff",
+          color: active ? "#fff" : "#374151",
+          fontSize: 12,
+          fontWeight: active ? 700 : 400,
+          cursor: "pointer",
+          transition: "all 0.15s",
+          whiteSpace: "nowrap",
+        }}
+      >
+        <span>{CATEGORY_ICONS[cat]}</span>
+        {CAT_LABELS[cat]}
+      </button>
+    );
+  }
 
   return (
     <aside style={mobileView ? mobileStyle : desktopStyle}>
@@ -105,38 +145,37 @@ export default function Sidebar({ open, filters, onChange, total, filtered, mobi
         />
 
         {/* ── Category picker ── */}
-        <div>
-          <h2 style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <h2 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>
             {tr.categoryTitle}
           </h2>
+
+          {/* All */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {cats.map((cat) => {
-              const active = filters.category === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => onChange({ ...filters, category: cat })}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    padding: "5px 10px",
-                    borderRadius: 20,
-                    border: `1.5px solid ${active ? "#0D9488" : "#d1d5db"}`,
-                    background: active ? "#0D9488" : "#fff",
-                    color: active ? "#fff" : "#374151",
-                    fontSize: 12,
-                    fontWeight: active ? 700 : 400,
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <span>{CATEGORY_ICONS[cat]}</span>
-                  {CAT_LABELS[cat]}
-                </button>
-              );
-            })}
+            <CatButton cat="all" activeColor={GOV_COLOR} />
+          </div>
+
+          {/* Government / Public group */}
+          <div>
+            <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 600, color: "#0891b2", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: 4 }}>
+              🏛 {tr.govGroup}
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <CatButton cat="public" activeColor={GOV_COLOR} />
+              <CatButton cat="mrt"    activeColor={MRT_COLOR} />
+            </div>
+          </div>
+
+          {/* Commercial group */}
+          <div>
+            <p style={{ margin: "0 0 6px", fontSize: 11, fontWeight: 600, color: "#9ca3af", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: 4 }}>
+              🏪 {tr.commercialGroup}
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {comCats.map((cat) => (
+                <CatButton key={cat} cat={cat} activeColor={COM_COLORS[cat] ?? "#374151"} />
+              ))}
+            </div>
           </div>
         </div>
 
@@ -169,21 +208,37 @@ export default function Sidebar({ open, filters, onChange, total, filtered, mobi
           <h2 style={{ margin: "0 0 10px", fontSize: 13, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>
             圖例 / Legend
           </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+
+          {/* Government group */}
+          <p style={{ margin: "0 0 6px", fontSize: 10, fontWeight: 600, color: "#0891b2", letterSpacing: "0.04em" }}>
+            🏛 {tr.govGroup}
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
             <LegendItem color="#0D9488" label={`🚻 ${tr.catPublic}`} />
-            <LegendItem color="#8b5cf6" label={`🚇 ${tr.catMrt}`} />
+            <LegendItem color="#0891b2" label={`🚇 ${tr.catMrt}`} />
+          </div>
+
+          {/* Commercial group */}
+          <p style={{ margin: "0 0 6px", fontSize: 10, fontWeight: 600, color: "#9ca3af", letterSpacing: "0.04em" }}>
+            🏪 {tr.commercialGroup}
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 10 }}>
             <LegendItem color="#f97316" label={`🏪 ${tr.catConvenience}`} />
             <LegendItem color="#84cc16" label={`☕ ${tr.catCafe}`} />
             <LegendItem color="#ef4444" label={`🍔 ${tr.catFastFood}`} />
             <LegendItem color="#ec4899" label={`🏬 ${tr.catDepartment}`} />
-            <LegendItem color="#f59e0b" label="⭐ Near Me" />
-            <LegendItem color="#3b82f6" label="📍 You" />
+          </div>
+
+          {/* Map markers */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <LegendItem color="#f59e0b" label="⭐ 附近 / Nearby" />
+            <LegendItem color="#3b82f6" label="📍 你在這 / You" />
           </div>
         </div>
 
         {/* Footer */}
         <p style={{ marginTop: "auto", fontSize: 11, color: "#9ca3af" }}>
-          資料來源：台北市政府開放資料平台
+          資料來源：政府開放資料平台 data.gov.tw
         </p>
       </div>
     </aside>

@@ -3,13 +3,13 @@ import "./globals.css";
 import "leaflet/dist/leaflet.css";
 
 export const metadata: Metadata = {
-  title: "台北公廁地圖 WC Map",
-  description: "台北市公共廁所查詢地圖 - Taipei Public Restroom Finder",
+  title: "台灣公廁地圖 Taiwan WC Map",
+  description: "全台灣公共廁所查詢地圖 - Taiwan Public Restroom Finder",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "台北公廁地圖",
+    title: "台灣公廁地圖",
   },
   icons: {
     icon: [

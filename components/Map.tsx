@@ -26,7 +26,7 @@ L.Icon.Default.mergeOptions({
 /** Category → { color, emoji } for marker */
 const CAT_STYLE: Record<RestroomCategory, { color: string; emoji: string }> = {
   public:       { color: "#0D9488", emoji: "🚻" },
-  mrt:          { color: "#8b5cf6", emoji: "🚇" },
+  mrt:          { color: "#0891b2", emoji: "🚇" },
   convenience:  { color: "#f97316", emoji: "🏪" },
   cafe:         { color: "#84cc16", emoji: "☕" },
   fastfood:     { color: "#ef4444", emoji: "🍔" },
@@ -105,7 +105,7 @@ function makeMarkerIcon(category: RestroomCategory, isNear: boolean) {
 function FlyTo({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo([lat, lng], 15, { duration: 1.2 });
+    map.flyTo([lat, lng], 16, { duration: 1.2 });
   }, [lat, lng, map]);
   return null;
 }
@@ -123,8 +123,8 @@ export default function Map({ restrooms, nearIds, userLat, userLng, tileStyle }:
   const isDark = !!tile.dark;
   return (
     <MapContainer
-      center={[25.033, 121.5654]}
-      zoom={14}
+      center={[23.6978, 120.9605]}
+      zoom={8}
       className={`w-full h-full${isDark ? " map-dark" : ""}`}
       zoomControl={true}
     >

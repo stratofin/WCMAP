@@ -3,8 +3,8 @@ export type Lang = "zh" | "en";
 export const t = {
   zh: {
     // App
-    appName: "台北公廁地圖",
-    appSub: "Taipei WC Map",
+    appName: "台灣公廁地圖",
+    appSub: "Taiwan WC Map",
 
     // Header / BottomBar buttons
     myLocation: "我的位置",
@@ -32,6 +32,8 @@ export const t = {
     catFastFood: "速食店",
     catMrt: "捷運站",
     catDepartment: "百貨公司",
+    govGroup: "政府 / 公共空間",
+    commercialGroup: "商業空間",
     showingN: (n: number, total: number) => `顯示 ${n} / ${total} 間`,
     clearFilters: "清除篩選",
 
@@ -53,7 +55,7 @@ export const t = {
 
     // Loading
     mapLoading: "地圖載入中...",
-    dataLoading: "載入台北公廁資料...",
+    dataLoading: "載入全台公廁資料...",
     fallbackBadge: "⚠ 示範資料（API暫時無法連線）",
 
     // Geo errors
@@ -73,8 +75,8 @@ export const t = {
 
   en: {
     // App
-    appName: "Taipei WC Map",
-    appSub: "台北公廁地圖",
+    appName: "Taiwan WC Map",
+    appSub: "台灣公廁地圖",
 
     // Header / BottomBar buttons
     myLocation: "My Location",
@@ -102,6 +104,8 @@ export const t = {
     catFastFood: "Fast Food",
     catMrt: "MRT Station",
     catDepartment: "Department Store",
+    govGroup: "Government / Public",
+    commercialGroup: "Commercial",
     showingN: (n: number, total: number) => `Showing ${n} of ${total}`,
     clearFilters: "Clear Filters",
 
@@ -123,7 +127,7 @@ export const t = {
 
     // Loading
     mapLoading: "Loading map...",
-    dataLoading: "Loading Taipei WC data...",
+    dataLoading: "Loading Taiwan WC data...",
     fallbackBadge: "⚠ Demo data (API unavailable)",
 
     // Geo errors
