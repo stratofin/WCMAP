@@ -34,6 +34,8 @@ export const t = {
     catDepartment: "百貨公司",
     govGroup: "政府 / 公共空間",
     commercialGroup: "商業空間",
+    regionTitle: "縣市 / 地區",
+    regionAll: "全台灣",
     showingN: (n: number, total: number) => `顯示 ${n} / ${total} 間`,
     clearFilters: "清除篩選",
 
@@ -106,6 +108,8 @@ export const t = {
     catDepartment: "Department Store",
     govGroup: "Government / Public",
     commercialGroup: "Commercial",
+    regionTitle: "City / Region",
+    regionAll: "All Taiwan",
     showingN: (n: number, total: number) => `Showing ${n} of ${total}`,
     clearFilters: "Clear Filters",
 

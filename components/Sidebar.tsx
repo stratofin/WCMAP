@@ -3,6 +3,30 @@
 import type { Filters, RestroomCategory } from "./types";
 import { useLang } from "@/lib/LanguageContext";
 
+// ── Taiwan regions grouped by area ───────────────────────────────
+const REGION_GROUPS = [
+  {
+    group: "北部 North",
+    regions: ["台北市", "新北市", "基隆市", "桃園市", "新竹市", "新竹縣"],
+  },
+  {
+    group: "中部 Central",
+    regions: ["苗栗縣", "台中市", "彰化縣", "南投縣", "雲林縣"],
+  },
+  {
+    group: "南部 South",
+    regions: ["嘉義市", "嘉義縣", "台南市", "高雄市", "屏東縣"],
+  },
+  {
+    group: "東部 East",
+    regions: ["宜蘭縣", "花蓮縣", "台東縣"],
+  },
+  {
+    group: "離島 Islands",
+    regions: ["澎湖縣", "金門縣", "連江縣"],
+  },
+];
+
 // Government / public color family
 const GOV_COLOR = "#0D9488";
 const MRT_COLOR = "#0891b2";
@@ -143,6 +167,44 @@ export default function Sidebar({ open, filters, onChange, total, filtered, mobi
             boxSizing: "border-box",
           }}
         />
+
+        {/* ── Region picker ── */}
+        <div>
+          <h2 style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            📍 {tr.regionTitle}
+          </h2>
+          <select
+            value={filters.region}
+            onChange={(e) => onChange({ ...filters, region: e.target.value })}
+            style={{
+              width: "100%",
+              border: `1.5px solid ${filters.region !== "all" ? "#0D9488" : "#d1d5db"}`,
+              borderRadius: 10,
+              padding: "8px 12px",
+              fontSize: 14,
+              background: filters.region !== "all" ? "#f0fdf9" : "#fff",
+              color: "#111827",
+              outline: "none",
+              cursor: "pointer",
+              appearance: "none",
+              WebkitAppearance: "none",
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b7280' d='M1 1l5 5 5-5'/%3E%3C/svg%3E")`,
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "right 12px center",
+              paddingRight: 32,
+              boxSizing: "border-box",
+            }}
+          >
+            <option value="all">{tr.regionAll}</option>
+            {REGION_GROUPS.map((g) => (
+              <optgroup key={g.group} label={g.group}>
+                {g.regions.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </div>
 
         {/* ── Category picker ── */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

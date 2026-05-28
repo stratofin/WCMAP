@@ -4,9 +4,16 @@ import type { Restroom, RestroomCategory } from "@/components/types";
 // ─────────────────────────────────────────────────────────────────
 // 1. OpenStreetMap Overpass API (best coverage, free, no key)
 // ─────────────────────────────────────────────────────────────────
-const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+// Multiple mirrors — tried in order until one succeeds
+const OVERPASS_MIRRORS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://overpass.openstreetmap.ru/api/interpreter",
+];
+// Timeout 8s per mirror to stay within Vercel's 10s function limit
+const OVERPASS_TIMEOUT_MS = 8000;
 // Fetch all amenity=toilets + buildings/venues tagged toilets=yes in Taiwan
-const OVERPASS_QUERY = `[out:json][bbox:21.5,118,26.5,122.5][timeout:20];
+const OVERPASS_QUERY = `[out:json][bbox:21.5,118,26.5,122.5][timeout:7];
 (
   node[amenity=toilets];
   way[amenity=toilets];
@@ -73,25 +80,29 @@ function osmToRestroom(el: OsmElement, i: number): Restroom | null {
 }
 
 async function fetchOverpass(): Promise<Restroom[]> {
-  try {
-    const res = await fetch(OVERPASS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `data=${encodeURIComponent(OVERPASS_QUERY)}`,
-      next: { revalidate: 3600 },
-      signal: AbortSignal.timeout(22000),
-    });
-    if (!res.ok) return [];
-    const json = await res.json() as { elements?: OsmElement[] };
-    const results = (json.elements ?? [])
-      .map((el, i) => osmToRestroom(el, i))
-      .filter((r): r is Restroom => r !== null);
-    console.log(`[WCMap OSM] ${results.length} nodes`);
-    return results;
-  } catch (e) {
-    console.warn("[WCMap OSM] failed:", e);
-    return [];
+  for (const mirror of OVERPASS_MIRRORS) {
+    try {
+      const res = await fetch(mirror, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: `data=${encodeURIComponent(OVERPASS_QUERY)}`,
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(OVERPASS_TIMEOUT_MS),
+      });
+      if (!res.ok) continue;
+      const json = await res.json() as { elements?: OsmElement[] };
+      const results = (json.elements ?? [])
+        .map((el, i) => osmToRestroom(el, i))
+        .filter((r): r is Restroom => r !== null);
+      if (results.length > 10) {
+        console.log(`[WCMap OSM] ${results.length} nodes from ${mirror}`);
+        return results;
+      }
+    } catch (e) {
+      console.warn(`[WCMap OSM] mirror ${mirror} failed:`, (e as Error).message);
+    }
   }
+  return [];
 }
 
 // ─────────────────────────────────────────────────────────────────

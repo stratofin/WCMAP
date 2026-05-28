@@ -30,4 +30,5 @@ export interface Filters {
   is24h: boolean;
   search: string;
   category: RestroomCategory | "all";
+  region: string;   // "all" | 縣市名稱, e.g. "台北市"
 }

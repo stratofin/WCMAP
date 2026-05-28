@@ -44,6 +44,7 @@ function HomeInner() {
     is24h: false,
     search: "",
     category: "all",
+    region: "all",
   });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [tileStyle, setTileStyle] = useState<TileStyle>("voyager");  // default: beautiful colour map
@@ -84,6 +85,13 @@ function HomeInner() {
     if (filters.accessible && !r.accessible) return false;
     if (filters.babyChange && !r.babyChange) return false;
     if (filters.is24h && !r.is24h) return false;
+    // Region filter: match against district + address
+    if (filters.region !== "all") {
+      const haystack = `${r.district} ${r.address}`;
+      // Strip the last 1–2 chars to allow "台北" to match "台北市" in various formats
+      const key = filters.region.replace(/[市縣]$/, "");
+      if (!haystack.includes(key)) return false;
+    }
     if (filters.search) {
       const q = filters.search.toLowerCase();
       if (
